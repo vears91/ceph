@@ -306,11 +306,14 @@ void *Worker::entry()
  *******************/
 const string WorkerPool::name = "AsyncMessenger::WorkerPool";
 
-WorkerPool::WorkerPool(CephContext *c): cct(c), seq(0), started(false),
+WorkerPool::WorkerPool(CephContext *c): cct(c), started(false),
                                         barrier_lock("WorkerPool::WorkerPool::barrier_lock"),
                                         barrier_count(0)
 {
   assert(cct->_conf->ms_async_op_threads > 0);
+  // make sure user won't try to force some crazy number of worker threads
+  assert(cct->_conf->ms_async_max_op_threads >= cct->_conf->ms_async_op_threads && 
+         cct->_conf->ms_async_op_threads <= 32);
   for (int i = 0; i < cct->_conf->ms_async_op_threads; ++i) {
     Worker *w = new Worker(cct, this, i);
     workers.push_back(w);
@@ -348,6 +351,72 @@ void WorkerPool::start()
     }
     started = true;
   }
+}
+
+Worker* WorkerPool::get_worker()
+{
+  ldout(cct, 10) << __func__ << dendl;
+
+   // start with some reasonably large number
+  unsigned min_load = std::numeric_limits<int>::max();
+  Worker* current_best = nullptr;
+
+  simple_spin_lock(&pool_spin);
+ // find worker with least references
+  // tempting case is returning on references == 0, but in reality
+  // this will happen so rarely that there's no need for special case.
+  for (auto p = workers.begin(); p != workers.end(); ++p) {
+    unsigned worker_load = (*p)->references.read();
+    if (worker_load < min_load) {
+      current_best = *p;
+      min_load = worker_load;
+    }
+  }
+
+  // if minimum load exceeds amount of workers, make a new worker
+  // logic behind this is that we're not going to create new worker
+  // just because others have *some* load, we'll defer worker creation
+  // until others have *plenty* of load. This will cause new worker
+  // to get assigned to all new connections *unless* one or more
+  // of workers get their load reduced - in that case, this worker
+  // will be assigned to new connection.
+  // TODO: add more logic and heuristics, so connections known to be
+  // of light workload (heartbeat service, etc.) won't overshadow
+  // heavy workload (clients, etc).
+  if (!current_best || ((workers.size() < (unsigned)cct->_conf->ms_async_max_op_threads)
+      && (min_load > workers.size()))) {
+     ldout(cct, 10) << __func__ << " creating worker" << dendl;
+     current_best = new Worker(cct, this, workers.size());
+     workers.push_back(current_best);
+     current_best->create("ms_async_worker");
+  }
+
+  current_best->references.inc();
+  simple_spin_unlock(&pool_spin);
+
+  return current_best;
+}
+
+void WorkerPool::release_worker(EventCenter* c)
+{
+  ldout(cct, 10) << __func__ << dendl;
+  simple_spin_lock(&pool_spin);
+  for (auto p = workers.begin(); p != workers.end(); ++p) {
+    if (&((*p)->center) == c) {
+      ldout(cct, 10) << __func__ << " found worker, releasing" << dendl;
+      (*p)->references.dec();
+      // prevent wtf conditons, in this case we can just reset the counter
+      // worst case scenario, the workload won't be balanced.
+      unsigned oldref = (*p)->references.read();
+      if (oldref >= std::numeric_limits<int>::max()) {
+        (*p)->references.set(0);
+        ldout(cct, 0) << __func__ << " worker " << *p << "had crazy reference count ("
+            << oldref << "), correcting..." << dendl;
+      }
+      break;
+    }
+  }
+  simple_spin_unlock(&pool_spin);
 }
 
 void WorkerPool::barrier()
