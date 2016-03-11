@@ -3300,7 +3300,7 @@ void OSD::build_past_intervals_parallel()
   // the previous past_intervals and rebuilding from scratch, or we
   // can just do this and commit all our work at the end.
   ObjectStore::Transaction t;
-  int num = 0;
+  unsigned num = 0;
   for (map<PG*,pistate>::iterator i = pis.begin(); i != pis.end(); ++i) {
     PG *pg = i->first;
     pg->lock();
@@ -4395,7 +4395,7 @@ bool remove_dir(
   ThreadPool::TPHandle &handle)
 {
   vector<ghobject_t> olist;
-  int64_t num = 0;
+  uint64_t num = 0;
   ObjectStore::Transaction t;
   ghobject_t next;
   handle.reset_tp_timeout();
