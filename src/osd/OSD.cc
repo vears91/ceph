@@ -6431,6 +6431,36 @@ void OSD::osdmap_subscribe(version_t epoch, bool force_request)
     monc->renew_subs();
   }
 }
+void OSD::trim_maps(epoch_t oldest)
+{
+  if (!superblock.oldest_map)
+    return;
+
+  epoch_t min = std::min(oldest, service.map_cache.cached_key_lower_bound());
+  if (superblock.oldest_map >= min)
+    return;
+
+  unsigned num = 0;
+  ObjectStore::Transaction t;
+  for (epoch_t e = superblock.oldest_map; e < min; ++e) {
+    dout(20) << " removing old osdmap epoch " << e << dendl;
+    t.remove(coll_t::meta(), get_osdmap_pobject_name(e));
+    t.remove(coll_t::meta(), get_inc_osdmap_pobject_name(e));
+    superblock.oldest_map = e + 1;
+    num++;
+    if (num >= cct->_conf->osd_target_transaction_size) {
+      service.publish_superblock(superblock);
+      // handle_osd_map() will write_superblock(), so we can save it for now.
+      store->queue_transaction(service.meta_osr.get(), std::move(t), nullptr);
+    }
+  }
+  if (!t.empty()) {
+    service.publish_superblock(superblock);
+    store->queue_transaction(service.meta_osr.get(), std::move(t), nullptr);
+  }
+  // we should not remove the cached maps
+  assert(min <= service.map_cache.cached_key_lower_bound());
+}
 
 void OSD::handle_osd_map(MOSDMap *m)
 {
@@ -6593,22 +6623,7 @@ void OSD::handle_osd_map(MOSDMap *m)
     return;
   }
 
-  if (superblock.oldest_map) {
-    int num = 0;
-    epoch_t min(
-      MIN(m->oldest_map,
-	  service.map_cache.cached_key_lower_bound()));
-    for (epoch_t e = superblock.oldest_map; e < min; ++e) {
-      dout(20) << " removing old osdmap epoch " << e << dendl;
-      t.remove(coll_t::meta(), get_osdmap_pobject_name(e));
-      t.remove(coll_t::meta(), get_inc_osdmap_pobject_name(e));
-      superblock.oldest_map = e+1;
-      num++;
-      if (num >= cct->_conf->osd_target_transaction_size &&
-	  (uint64_t)num > (last - first))  // make sure we at least keep pace with incoming maps
-	break;
-    }
-  }
+  trim_maps(m->oldest_map);
 
   if (!superblock.oldest_map || skip_maps)
     superblock.oldest_map = first;

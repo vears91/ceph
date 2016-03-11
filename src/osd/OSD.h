@@ -1855,6 +1855,7 @@ private:
 
   void wait_for_new_map(OpRequestRef op);
   void handle_osd_map(class MOSDMap *m);
+  void trim_maps(epoch_t oldest);
   void note_down_osd(int osd);
   void note_up_osd(int osd);
 
