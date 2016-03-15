@@ -4,7 +4,7 @@ TMPDIR=/tmp/rbd_test_admin_socket$$
 mkdir $TMPDIR
 trap "rm -fr $TMPDIR" 0
 
-. $(dirname $0)/../ceph-helpers.sh
+. $CEPH_ROOT/qa/workunits/ceph-helpers.sh
 
 function expect_false()
 {

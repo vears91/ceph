@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-. $(dirname $0)/../ceph-helpers.sh
+. $CEPH_ROOT/qa/workunits/ceph-helpers.sh
 
 function list_tests()
 {
