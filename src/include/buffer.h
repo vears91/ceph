@@ -337,7 +337,12 @@ namespace buffer CEPH_BUFFER_API {
     };
 
   public:
-    typedef iterator_impl<true> const_iterator;
+    class CEPH_BUFFER_API const_iterator : public iterator_impl<true> {
+    public:
+      const_iterator() = default;
+      const_iterator(bl_t *l, unsigned o=0);
+      const_iterator(bl_t *l, unsigned o, list_iter_t ip, unsigned po);
+    };
 
     class CEPH_BUFFER_API iterator : public iterator_impl<false> {
     public:

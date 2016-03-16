@@ -1204,6 +1204,14 @@ static simple_spinlock_t buffer_debug_lock = SIMPLE_SPINLOCK_INITIALIZER;
   template class buffer::list::iterator_impl<true>;
   template class buffer::list::iterator_impl<false>;
 
+  buffer::list::const_iterator::const_iterator(bl_t *l, unsigned o)
+    : iterator_impl(l, o)
+  {}
+
+  buffer::list::const_iterator::const_iterator(bl_t *l, unsigned o, list_iter_t ip, unsigned po)
+    : iterator_impl(l, o, ip, po)
+  {}
+
   buffer::list::iterator::iterator(bl_t *l, unsigned o)
     : iterator_impl(l, o)
   {}
