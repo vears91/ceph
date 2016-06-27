@@ -510,7 +510,7 @@ if (WITH_CEPHFS)
   add_executable(cephfs-data-scan ${cephfs_data_scan_srcs})
   target_link_libraries(cephfs-data-scan librados mds osdc global
                         cls_cephfs_client
-                        ${BLKID_LIBRARIES} ${CMAKE_DL_LIBS})
+                        ${BLKID_LIBRARIES} ${CMAKE_DL_LIBS} ${BLKIN_LIBRARIES})
 endif (WITH_CEPHFS)
 
 set(librados_config_srcs
