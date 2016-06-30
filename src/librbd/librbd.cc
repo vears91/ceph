@@ -2600,6 +2600,19 @@ extern "C" int rbd_aio_write(rbd_image_t image, uint64_t off, size_t len,
   return 0;
 }
 
+extern "C" int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
+           const char *buf, rbd_completion_t c, blkin_trace_info *trace_info)
+{
+  librbd::ImageCtx *ictx = (librbd::ImageCtx *)image;
+  librbd::RBD::AioCompletion *comp = (librbd::RBD::AioCompletion *)c;
+  tracepoint(librbd, aio_write_enter, ictx, ictx->name.c_str(), ictx->snap_name.c_str(), ictx->read_only, off, len, buf, comp->pc);
+  ictx->trace_event(trace_info, "rbd_aio_write enter");
+  ictx->aio_work_queue->aio_write(get_aio_completion(comp), off, len, buf, 0);
+  ictx->trace_event(trace_info, "rbd_aio_write exit");
+  tracepoint(librbd, aio_write_exit, 0);
+  return 0;
+}
+
 extern "C" int rbd_aio_write2(rbd_image_t image, uint64_t off, size_t len,
 			      const char *buf, rbd_completion_t c, int op_flags)
 {

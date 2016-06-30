@@ -171,7 +171,9 @@ struct C_InvalidateCache : public Context {
       operations(new Operations<>(*this)),
       exclusive_lock(nullptr), object_map(nullptr),
       aio_work_queue(nullptr), op_work_queue(nullptr),
-      asok_hook(nullptr)
+      asok_hook(nullptr),
+      endp("librbd"),
+      trace()
   {
     md_ctx.dup(p);
     data_ctx.dup(p);
@@ -1051,5 +1053,10 @@ struct C_InvalidateCache : public Context {
     assert(policy != nullptr);
     delete journal_policy;
     journal_policy = policy;
+  }
+
+  void ImageCtx::trace_event(blkin_trace_info *trace_info, const char *event_name) {
+    trace.init("librbd_trace_event", &endp, trace_info, false);
+    trace.event(event_name);
   }
 }

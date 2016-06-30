@@ -29,6 +29,7 @@ extern "C" {
 #include <string.h>
 #include "../rados/librados.h"
 #include "features.h"
+#include "common/zipkin_c.h"
 
 #define LIBRBD_VER_MAJOR 0
 #define LIBRBD_VER_MINOR 1
@@ -578,6 +579,10 @@ CEPH_RBD_API int rbd_aio_write(rbd_image_t image, uint64_t off, size_t len,
  */
 CEPH_RBD_API int rbd_aio_write2(rbd_image_t image, uint64_t off, size_t len,
                                 const char *buf, rbd_completion_t c, int op_flags);
+
+CEPH_RBD_API int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
+                               const char *buf, rbd_completion_t c, blkin_trace_info *trace_info);
+
 CEPH_RBD_API int rbd_aio_read(rbd_image_t image, uint64_t off, size_t len,
                               char *buf, rbd_completion_t c);
 /*

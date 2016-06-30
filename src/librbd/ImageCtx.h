@@ -18,6 +18,7 @@
 #include "common/Readahead.h"
 #include "common/RWLock.h"
 #include "common/snap_types.h"
+#include "common/zipkin_trace.h"    
 #include "include/atomic.h"
 #include "include/buffer_fwd.h"
 #include "include/rbd/librbd.hpp"
@@ -153,6 +154,9 @@ namespace librbd {
     EventSocket event_socket;
 
     ContextWQ *op_work_queue;
+
+    ZTracer::Endpoint endp;
+    ZTracer::Trace trace;
 
     // Configuration
     static const string METADATA_CONF_PREFIX;
@@ -303,6 +307,8 @@ namespace librbd {
 
     journal::Policy *get_journal_policy() const;
     void set_journal_policy(journal::Policy *policy);
+
+    void trace_event(blkin_trace_info *trace_info, const char * event_name);
   };
 }
 
