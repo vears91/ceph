@@ -29,7 +29,10 @@ extern "C" {
 #include <string.h>
 #include "../rados/librados.h"
 #include "features.h"
-#include "common/zipkin_c.h"
+
+#ifdef WITH_BLKIN
+#include <zipkin_c.h>
+#endif
 
 #define LIBRBD_VER_MAJOR 0
 #define LIBRBD_VER_MINOR 1
@@ -580,9 +583,6 @@ CEPH_RBD_API int rbd_aio_write(rbd_image_t image, uint64_t off, size_t len,
 CEPH_RBD_API int rbd_aio_write2(rbd_image_t image, uint64_t off, size_t len,
                                 const char *buf, rbd_completion_t c, int op_flags);
 
-CEPH_RBD_API int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
-                               const char *buf, rbd_completion_t c, blkin_trace_info *trace_info);
-
 CEPH_RBD_API int rbd_aio_read(rbd_image_t image, uint64_t off, size_t len,
                               char *buf, rbd_completion_t c);
 /*
@@ -667,6 +667,11 @@ CEPH_RBD_API int rbd_mirror_image_get_status(rbd_image_t image,
 CEPH_RBD_API int rbd_group_create(rados_ioctx_t p, const char *name);
 CEPH_RBD_API int rbd_group_remove(rados_ioctx_t p, const char *name);
 CEPH_RBD_API int rbd_group_list(rados_ioctx_t p, char *names, size_t *size);
+
+#ifdef WITH_BLKIN
+CEPH_RBD_API int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
+                               const char *buf, rbd_completion_t c, blkin_trace_info *trace_info);
+#endif
 
 #ifdef __cplusplus
 }
