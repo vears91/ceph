@@ -1055,7 +1055,7 @@ struct C_InvalidateCache : public Context {
     journal_policy = policy;
   }
 
-  void ImageCtx::trace_event(blkin_trace_info *trace_info, const char *event_name) {
+  void ImageCtx::trace_event(const blkin_trace_info *trace_info, const char *event_name) {
     trace.init("librbd_trace_event", &endp, trace_info, false);
     trace.event(event_name);
   }

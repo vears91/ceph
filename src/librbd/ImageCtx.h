@@ -308,7 +308,7 @@ namespace librbd {
     journal::Policy *get_journal_policy() const;
     void set_journal_policy(journal::Policy *policy);
 
-    void trace_event(blkin_trace_info *trace_info, const char * event_name);
+    void trace_event(const blkin_trace_info *trace_info, const char * event_name);
   };
 }
 
