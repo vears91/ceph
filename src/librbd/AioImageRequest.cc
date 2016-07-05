@@ -103,7 +103,7 @@ void AioImageRequest<I>::aio_read(I *ictx, AioCompletion *c,
 template <typename I>
 void AioImageRequest<I>::aio_write(I *ictx, AioCompletion *c,
                                    uint64_t off, size_t len, const char *buf,
-                                   int op_flags) {
+                                   int op_flags, struct blkin_trace_info *trace_info) {
   c->init_time(ictx, librbd::AIO_TYPE_WRITE);
 
   AioImageWrite req(*ictx, c, off, len, buf, op_flags);
@@ -375,7 +375,8 @@ AioObjectRequest *AioImageWrite::create_object_request(
                                            object_extent.oid.name,
                                            object_extent.objectno,
                                            object_extent.offset, bl,
-                                           snapc, on_finish);
+                                           snapc, on_finish,
+                                           m_trace_info);
   req->set_op_flags(m_op_flags);
   return req;
 }

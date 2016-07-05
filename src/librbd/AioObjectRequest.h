@@ -31,7 +31,8 @@ namespace librbd {
     AioObjectRequest(ImageCtx *ictx, const std::string &oid,
                      uint64_t objectno, uint64_t off, uint64_t len,
                      librados::snap_t snap_id,
-                     Context *completion, bool hide_enoent);
+                     Context *completion, bool hide_enoent,
+                     struct blkin_trace_info *trace_info = nullptr);
     virtual ~AioObjectRequest() {}
 
     virtual void add_copyup_ops(librados::ObjectWriteOperation *wr) {};
@@ -55,6 +56,7 @@ namespace librbd {
     Context *m_completion;
     std::vector<std::pair<uint64_t,uint64_t> > m_parent_extents;
     bool m_hide_enoent;
+    blkin_trace_info *m_trace_info;
   };
 
   class AioObjectRead : public AioObjectRequest {
@@ -119,7 +121,8 @@ namespace librbd {
     AbstractAioObjectWrite(ImageCtx *ictx, const std::string &oid,
                            uint64_t object_no, uint64_t object_off,
                            uint64_t len, const ::SnapContext &snapc,
-                           Context *completion, bool hide_enoent);
+                           Context *completion, bool hide_enoent,
+                           struct blkin_trace_info *trace_info = nullptr);
 
     virtual void add_copyup_ops(librados::ObjectWriteOperation *wr)
     {
@@ -200,9 +203,10 @@ namespace librbd {
   public:
     AioObjectWrite(ImageCtx *ictx, const std::string &oid, uint64_t object_no,
                    uint64_t object_off, const ceph::bufferlist &data,
-                   const ::SnapContext &snapc, Context *completion)
+                   const ::SnapContext &snapc, Context *completion,
+                   struct blkin_trace_info *trace_info = nullptr)
       : AbstractAioObjectWrite(ictx, oid, object_no, object_off, data.length(),
-                               snapc, completion, false),
+                               snapc, completion, false, trace_info),
 	m_write_data(data), m_op_flags(0) {
     }
 

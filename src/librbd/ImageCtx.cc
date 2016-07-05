@@ -9,6 +9,7 @@
 #include "common/errno.h"
 #include "common/perf_counters.h"
 #include "common/WorkQueue.h"
+#include "common/zipkin_trace.h"
 
 #include "librbd/AioImageRequestWQ.h"
 #include "librbd/AioCompletion.h"
