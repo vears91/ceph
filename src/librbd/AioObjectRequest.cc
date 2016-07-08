@@ -7,6 +7,7 @@
 #include "common/Mutex.h"
 #include "common/RWLock.h"
 #include "common/WorkQueue.h"
+#include "common/zipkin_trace.h"
 
 #include "librbd/AioObjectRequest.h"
 #include "librbd/AioCompletion.h"
@@ -32,11 +33,10 @@ namespace librbd {
 			             uint64_t objectno, uint64_t off,
                                      uint64_t len, librados::snap_t snap_id,
                                      Context *completion, bool hide_enoent,
-                                     const struct blkin_trace_info *trace_info)
+                                     const blkin_trace_info *trace_info)
     : m_ictx(ictx), m_oid(oid), m_object_no(objectno), m_object_off(off),
       m_object_len(len), m_snap_id(snap_id), m_completion(completion),
       m_hide_enoent(hide_enoent), m_trace_info(trace_info) {
-
     Striper::extent_to_file(m_ictx->cct, &m_ictx->layout, m_object_no,
                             0, m_ictx->layout.object_size, m_parent_extents);
 
@@ -512,6 +512,7 @@ namespace librbd {
 
     librados::AioCompletion *rados_completion =
       util::create_rados_safe_callback(this);
+
     int r = m_ictx->data_ctx.aio_operate(m_oid, rados_completion, &m_write,
 					 m_snap_seq, m_snaps);
     assert(r == 0);

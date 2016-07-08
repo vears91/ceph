@@ -147,9 +147,14 @@ void AioImageRequestWQ::aio_write(AioCompletion *c, uint64_t off, uint64_t len,
     return;
   }
 
+  ZTracer::Endpoint endpoint = ZTracer::Endpoint("AioImageRequestWQ");
+  ZTracer::Trace trace = ZTracer::Trace();
+  trace.init("aio_write", &endpoint, trace_info, false);
+  trace.event("AioImageRequestWQ::aio_write");
+
   RWLock::RLocker owner_locker(m_image_ctx.owner_lock);
   if (m_image_ctx.non_blocking_aio || writes_blocked()) {
-    queue(new AioImageWrite(m_image_ctx, c, off, len, buf, op_flags));
+    queue(new AioImageWrite(m_image_ctx, c, off, len, buf, op_flags, trace_info));
   } else {
     AioImageRequest<>::aio_write(&m_image_ctx, c, off, len, buf, op_flags, trace_info);
     finish_in_flight_op();
