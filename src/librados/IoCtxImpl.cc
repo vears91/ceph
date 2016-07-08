@@ -760,7 +760,7 @@ int librados::IoCtxImpl::aio_operate_read(const object_t &oid,
 int librados::IoCtxImpl::aio_operate(const object_t& oid,
 				     ::ObjectOperation *o, AioCompletionImpl *c,
 				     const SnapContext& snap_context, int flags,
-             blkin_trace_info *trace_info)
+             const blkin_trace_info *trace_info)
 {
   auto ut = ceph::real_clock::now(client->cct);
   /* can't write to a snapshot */

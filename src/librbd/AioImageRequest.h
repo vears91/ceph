@@ -32,7 +32,7 @@ public:
   static void aio_read(ImageCtxT *ictx, AioCompletion *c, uint64_t off,
                        size_t len, char *buf, bufferlist *pbl, int op_flags);
   static void aio_write(ImageCtxT *ictx, AioCompletion *c, uint64_t off,
-                        size_t len, const char *buf, int op_flags, blkin_trace_info *trace_info = nullptr);
+                        size_t len, const char *buf, int op_flags, const blkin_trace_info *trace_info = nullptr);
   static void aio_discard(ImageCtxT *ictx, AioCompletion *c, uint64_t off,
                           uint64_t len);
   static void aio_flush(ImageCtxT *ictx, AioCompletion *c);
@@ -54,9 +54,9 @@ protected:
   ImageCtxT &m_image_ctx;
   AioCompletion *m_aio_comp;
 
-  struct blkin_trace_info *m_trace_info;
+  const struct blkin_trace_info *m_trace_info;
 
-  AioImageRequest(ImageCtxT &image_ctx, AioCompletion *aio_comp, blkin_trace_info *trace_info = nullptr)
+  AioImageRequest(ImageCtxT &image_ctx, AioCompletion *aio_comp, const blkin_trace_info *trace_info = nullptr)
     : m_image_ctx(image_ctx), m_aio_comp(aio_comp), m_trace_info(trace_info) {}
 
   virtual void send_request() = 0;
@@ -108,7 +108,7 @@ protected:
   const size_t m_len;
 
   AbstractAioImageWrite(ImageCtx &image_ctx, AioCompletion *aio_comp,
-                        uint64_t off, size_t len, blkin_trace_info *trace_info = nullptr)
+                        uint64_t off, size_t len, const blkin_trace_info *trace_info = nullptr)
     : AioImageRequest(image_ctx, aio_comp, trace_info), m_off(off), m_len(len),
       m_synchronous(false) {
   }
@@ -139,7 +139,7 @@ private:
 class AioImageWrite : public AbstractAioImageWrite {
 public:
   AioImageWrite(ImageCtx &image_ctx, AioCompletion *aio_comp, uint64_t off,
-                size_t len, const char *buf, int op_flags, blkin_trace_info *trace_info = nullptr)
+                size_t len, const char *buf, int op_flags, const blkin_trace_info *trace_info = nullptr)
     : AbstractAioImageWrite(image_ctx, aio_comp, off, len, trace_info), m_buf(buf),
       m_op_flags(op_flags) {
   }

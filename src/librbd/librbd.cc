@@ -2935,7 +2935,7 @@ extern "C" int rbd_group_list(rados_ioctx_t p, char *names, size_t *size)
 }
 
 extern "C" int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
-           const char *buf, rbd_completion_t c, struct blkin_trace_info *trace_info)
+           const char *buf, rbd_completion_t c, const struct blkin_trace_info *trace_info)
 {
   librbd::ImageCtx *ictx = (librbd::ImageCtx *)image;
   librbd::RBD::AioCompletion *comp = (librbd::RBD::AioCompletion *)c;

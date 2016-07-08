@@ -665,7 +665,7 @@ CEPH_RBD_API int rbd_group_remove(rados_ioctx_t p, const char *name);
 CEPH_RBD_API int rbd_group_list(rados_ioctx_t p, char *names, size_t *size);
 
 CEPH_RBD_API int rbd_aio_write_traced(rbd_image_t image, uint64_t off, size_t len,
-                               const char *buf, rbd_completion_t c, struct blkin_trace_info *trace_info);
+                               const char *buf, rbd_completion_t c, const struct blkin_trace_info *trace_info);
 
 #ifdef __cplusplus
 }
