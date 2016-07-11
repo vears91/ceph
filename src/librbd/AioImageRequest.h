@@ -55,13 +55,13 @@ protected:
   AioCompletion *m_aio_comp;
 
   const struct blkin_trace_info *m_trace_info;
+  ZTracer::Endpoint m_endp;
+  ZTracer::Trace m_trace;
 
   AioImageRequest(ImageCtxT &image_ctx, AioCompletion *aio_comp, const blkin_trace_info *trace_info = nullptr)
-    : m_image_ctx(image_ctx), m_aio_comp(aio_comp), m_trace_info(trace_info) {
-      ZTracer::Endpoint endpoint = ZTracer::Endpoint("AioImageRequest");
-      ZTracer::Trace trace = ZTracer::Trace();
-      trace.init("AioImageRequest", &endpoint, m_trace_info, false);
-      trace.event("AioImageRequest created"); 
+    : m_image_ctx(image_ctx), m_aio_comp(aio_comp), m_trace_info(trace_info), m_endp("AioImageRequest"),
+    m_trace("aioimagerequest", &m_endp, m_trace_info, false) {
+      m_trace.event("AioImageRequest created");
     }
 
   virtual void send_request() = 0;

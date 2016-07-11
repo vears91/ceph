@@ -100,6 +100,9 @@ private:
   bool m_shutdown;
   Context *m_on_shutdown;
 
+  ZTracer::Endpoint endp;
+  ZTracer::Trace trace;
+
   inline bool writes_empty() const {
     RWLock::RLocker locker(m_lock);
     return (m_queued_writes.read() == 0);

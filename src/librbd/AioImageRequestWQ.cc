@@ -24,7 +24,8 @@ AioImageRequestWQ::AioImageRequestWQ(ImageCtx *image_ctx, const string &name,
     m_lock(util::unique_lock_name("AioImageRequestWQ::m_lock", this)),
     m_write_blockers(0), m_in_progress_writes(0), m_queued_reads(0),
     m_queued_writes(0), m_in_flight_ops(0), m_refresh_in_progress(false),
-    m_shutdown(false), m_on_shutdown(nullptr) {
+    m_shutdown(false), m_on_shutdown(nullptr), endp("AioImageRequestWQ"),
+    trace() {
   CephContext *cct = m_image_ctx.cct;
   ldout(cct, 5) << this << " " << ": ictx=" << image_ctx << dendl;
   tp->add_work_queue(this);
@@ -134,6 +135,7 @@ void AioImageRequestWQ::aio_write(AioCompletion *c, uint64_t off, uint64_t len,
                                   const char *buf, int op_flags,
                                   bool native_async, const blkin_trace_info *trace_info) {
   c->init_time(&m_image_ctx, librbd::AIO_TYPE_WRITE);
+  c->init_trace(trace_info);
   CephContext *cct = m_image_ctx.cct;
   ldout(cct, 20) << "aio_write: ictx=" << &m_image_ctx << ", "
                  << "completion=" << c << ", off=" << off << ", "
@@ -147,11 +149,9 @@ void AioImageRequestWQ::aio_write(AioCompletion *c, uint64_t off, uint64_t len,
     return;
   }
 
-  ZTracer::Endpoint endpoint = ZTracer::Endpoint("AioImageRequestWQ");
-  ZTracer::Trace trace = ZTracer::Trace();
-  trace.init("aio_write", &endpoint, trace_info, false);
+  trace.init("aio_write", &endp, trace_info, false);
   trace.event("AioImageRequestWQ::aio_write");
-
+  trace.keyval("non_blocking_aio", m_image_ctx.non_blocking_aio);
   RWLock::RLocker owner_locker(m_image_ctx.owner_lock);
   if (m_image_ctx.non_blocking_aio || writes_blocked()) {
     queue(new AioImageWrite(m_image_ctx, c, off, len, buf, op_flags, trace_info));

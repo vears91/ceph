@@ -8,7 +8,7 @@
 #include "include/Context.h"
 #include "include/utime.h"
 #include "include/rbd/librbd.hpp"
-
+#include "common/zipkin_trace.h"
 #include "librbd/AsyncOperation.h"
 #include "librbd/ImageCtx.h"
 
@@ -76,6 +76,9 @@ namespace librbd {
     xlist<AioCompletion*>::item m_xlist_item;
     bool event_notify;
 
+    ZTracer::Endpoint endp;
+    ZTracer::Trace trace;
+
     template <typename T, void (T::*MF)(int)>
     static void callback_adapter(completion_t cb, void *arg) {
       AioCompletion *comp = reinterpret_cast<AioCompletion *>(cb);
@@ -108,7 +111,8 @@ namespace librbd {
 		      aio_type(AIO_TYPE_NONE),
 		      read_bl(NULL), read_buf(NULL), read_buf_len(0),
                       journal_tid(0),
-                      m_xlist_item(this), event_notify(false) {
+                      m_xlist_item(this), event_notify(false),
+                      endp("aiocompletion"), trace() {
     }
     ~AioCompletion() {
     }
@@ -118,6 +122,7 @@ namespace librbd {
     void finalize(ssize_t rval);
 
     void init_time(ImageCtx *i, aio_type_t t);
+    void init_trace(const blkin_trace_info *trace_info);
     void start_op(bool ignore_type = false);
     void fail(int r);
 

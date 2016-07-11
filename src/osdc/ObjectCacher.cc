@@ -562,7 +562,8 @@ ObjectCacher::ObjectCacher(CephContext *cct_, string name,
     flush_set_callback_arg(flush_callback_arg),
     last_read_tid(0), flusher_stop(false), flusher_thread(this),finisher(cct),
     stat_clean(0), stat_zero(0), stat_dirty(0), stat_rx(0), stat_tx(0),
-    stat_missing(0), stat_error(0), stat_dirty_waiting(0), reads_outstanding(0)
+    stat_missing(0), stat_error(0), stat_dirty_waiting(0), reads_outstanding(0),
+    m_endp("ObjectCacher")
 {
   perf_start();
   finisher.start();
@@ -1564,7 +1565,7 @@ void ObjectCacher::retry_waiting_reads()
   waitfor_read.splice(waitfor_read.end(), ls);
 }
 
-int ObjectCacher::writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace)
+int ObjectCacher::writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace, const struct blkin_trace_info *trace_info)
 {
   assert(lock.is_locked());
   ceph::real_time now = ceph::real_clock::now();
@@ -1573,6 +1574,9 @@ int ObjectCacher::writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace)
   bool dontneed = wr->fadvise_flags & LIBRADOS_OP_FLAG_FADVISE_DONTNEED;
   bool nocache = wr->fadvise_flags & LIBRADOS_OP_FLAG_FADVISE_NOCACHE;
 
+  ZTracer::Trace trace = ZTracer::Trace();
+  trace.init("ObjectCacher", &m_endp, trace_info, false);
+  trace.event("ObjectCacher::writex");
   for (vector<ObjectExtent>::iterator ex_it = wr->extents.begin();
        ex_it != wr->extents.end();
        ++ex_it) {
@@ -1644,7 +1648,7 @@ int ObjectCacher::writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace)
     }
   }
 
-  int r = _wait_for_write(wr, bytes_written, oset, onfreespace);
+  int r = _wait_for_write(wr, bytes_written, oset, onfreespace, trace_info);
   delete wr;
 
   //verify_stats();
@@ -1704,12 +1708,14 @@ void ObjectCacher::maybe_wait_for_writeback(uint64_t len)
 
 // blocking wait for write.
 int ObjectCacher::_wait_for_write(OSDWrite *wr, uint64_t len, ObjectSet *oset,
-				  Context *onfreespace)
+				  Context *onfreespace, const blkin_trace_info *trace_info)
 {
   assert(lock.is_locked());
   int ret = 0;
-
+  ZTracer::Trace trace = ZTracer::Trace();
+  trace.init("ObjectCacher", &m_endp, trace_info, false);
   if (max_dirty > 0) {
+    trace.event("ObjectCacher::_wait_for_write max dirty > 0");
     if (block_writes_upfront) {
       maybe_wait_for_writeback(len);
       if (onfreespace)
@@ -1719,6 +1725,7 @@ int ObjectCacher::_wait_for_write(OSDWrite *wr, uint64_t len, ObjectSet *oset,
       finisher.queue(new C_WaitForWrite(this, len, onfreespace));
     }
   } else {
+    trace.event("ObjectCacher::_wait_for_write write thru");
     // write-thru!  flush what we just wrote.
     Cond cond;
     bool done = false;

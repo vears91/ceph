@@ -40,6 +40,8 @@ namespace librbd {
 
   void AioCompletion::finalize(ssize_t rval)
   {
+    if (trace.valid())
+      trace.event("AioCompletion::finalize");
     assert(lock.is_locked());
     assert(ictx != nullptr);
     CephContext *cct = ictx->cct;
@@ -79,6 +81,8 @@ namespace librbd {
     tracepoint(librbd, aio_complete_enter, this, rval);
     utime_t elapsed;
     elapsed = ceph_clock_now(cct) - start_time;
+    if (trace.valid())
+      trace.event("AioCompletion::complete");
     switch (aio_type) {
     case AIO_TYPE_OPEN:
     case AIO_TYPE_CLOSE:
@@ -135,10 +139,17 @@ namespace librbd {
     }
   }
 
+  void AioCompletion::init_trace(const blkin_trace_info *trace_info) {
+    trace.init("aiocompletion", &endp, trace_info, false);
+    trace.event("AioCompletion::init_trace");
+  }
+
   void AioCompletion::start_op(bool ignore_type) {
     Mutex::Locker locker(lock);
     assert(ictx != nullptr);
     assert(!async_op.started());
+    if (trace.valid())
+      trace.event("AioCompletion::start_op");
     if (state == STATE_PENDING && (ignore_type || aio_type != AIO_TYPE_FLUSH)) {
       async_op.start_op(*ictx);
     }
@@ -174,6 +185,8 @@ namespace librbd {
 
   void AioCompletion::complete_request(ssize_t r)
   {
+    if (trace.valid())
+      trace.event("AioCompletion::complete_request");
     lock.Lock();
     assert(ictx != nullptr);
     CephContext *cct = ictx->cct;
@@ -203,6 +216,8 @@ namespace librbd {
   }
 
   bool AioCompletion::is_complete() {
+    if (trace.valid())
+      trace.event("AioCompletion::is_complete enter");
     tracepoint(librbd, aio_is_complete_enter, this);
     bool done;
     {
@@ -214,6 +229,8 @@ namespace librbd {
   }
 
   ssize_t AioCompletion::get_return_value() {
+    if (trace.valid())
+      trace.event("AioCompletion::get_return_value enter");
     tracepoint(librbd, aio_get_return_value_enter, this);
     lock.Lock();
     ssize_t r = rval;

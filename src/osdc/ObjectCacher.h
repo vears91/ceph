@@ -11,7 +11,7 @@
 #include "common/Cond.h"
 #include "common/Finisher.h"
 #include "common/Thread.h"
-
+#include "common/zipkin_trace.h"
 #include "Objecter.h"
 #include "Striper.h"
 
@@ -416,6 +416,7 @@ class ObjectCacher {
 
   Cond flusher_cond;
   bool flusher_stop;
+
   void flusher_entry();
   class FlusherThread : public Thread {
     ObjectCacher *oc;
@@ -543,6 +544,8 @@ class ObjectCacher {
   int64_t reads_outstanding;
   Cond read_cond;
 
+  ZTracer::Endpoint m_endp;
+
   int _readx(OSDRead *rd, ObjectSet *oset, Context *onfinish,
 	     bool external_call);
   void retry_waiting_reads();
@@ -649,14 +652,14 @@ class ObjectCacher {
    * the return value is total bytes read
    */
   int readx(OSDRead *rd, ObjectSet *oset, Context *onfinish);
-  int writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace);
+  int writex(OSDWrite *wr, ObjectSet *oset, Context *onfreespace, const blkin_trace_info *trace_info = nullptr);
   bool is_cached(ObjectSet *oset, vector<ObjectExtent>& extents,
 		 snapid_t snapid);
 
 private:
   // write blocking
   int _wait_for_write(OSDWrite *wr, uint64_t len, ObjectSet *oset,
-		      Context *onfreespace);
+		      Context *onfreespace,  const blkin_trace_info *trace_info = nullptr);
   void maybe_wait_for_writeback(uint64_t len);
   bool _flush_set_finish(C_GatherBuilder *gather, Context *onfinish);
 

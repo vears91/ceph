@@ -105,6 +105,7 @@ void AioImageRequest<I>::aio_write(I *ictx, AioCompletion *c,
                                    uint64_t off, size_t len, const char *buf,
                                    int op_flags, const blkin_trace_info *trace_info) {
   c->init_time(ictx, librbd::AIO_TYPE_WRITE);
+
   AioImageWrite req(*ictx, c, off, len, buf, op_flags, trace_info);
   req.start_op();
   req.send();
@@ -229,6 +230,7 @@ void AioImageRead::send_request() {
 }
 
 void AbstractAioImageWrite::send_request() {
+  m_trace.event("AioImageRequest<>::send_request enter");
   CephContext *cct = m_image_ctx.cct;
 
   RWLock::RLocker md_locker(m_image_ctx.md_lock);
@@ -272,6 +274,8 @@ void AbstractAioImageWrite::send_request() {
       object_extents.size() + get_cache_request_count(journaling));
 
     AioObjectRequests requests;
+    m_trace.event("AioImageRequest<>::send_object_requests");
+    m_trace.keyval("obj extents size0", object_extents.size());
     send_object_requests(object_extents, snapc,
                          (journaling ? &requests : nullptr));
 
@@ -339,6 +343,7 @@ uint64_t AioImageWrite::append_journal_event(
 
 void AioImageWrite::send_cache_requests(const ObjectExtents &object_extents,
                                         uint64_t journal_tid) {
+  m_trace.event("AioImageWrite::send_cache_requests enter");
   for (ObjectExtents::const_iterator p = object_extents.begin();
        p != object_extents.end(); ++p) {
     const ObjectExtent &object_extent = *p;
@@ -349,7 +354,7 @@ void AioImageWrite::send_cache_requests(const ObjectExtents &object_extents,
     C_AioRequest *req_comp = new C_AioRequest(m_aio_comp);
     m_image_ctx.write_to_cache(object_extent.oid, bl, object_extent.length,
                                object_extent.offset, req_comp, m_op_flags,
-                               journal_tid);
+                               journal_tid, m_trace_info);
   }
 }
 
@@ -357,6 +362,7 @@ void AioImageWrite::send_object_requests(
     const ObjectExtents &object_extents, const ::SnapContext &snapc,
     AioObjectRequests *aio_object_requests) {
   // cache handles creating object requests during writeback
+  m_trace.event("AioImageWrite::send_object_requests enter");
   if (m_image_ctx.object_cacher == NULL) {
     AbstractAioImageWrite::send_object_requests(object_extents, snapc,
                                                 aio_object_requests);
