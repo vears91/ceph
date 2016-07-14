@@ -5,6 +5,7 @@
 
 #include <queue>
 
+#include "common/zipkin_trace.h"
 #include "include/Context.h"
 #include "include/types.h"
 #include "include/rados/librados.hpp"
@@ -38,7 +39,8 @@ namespace librbd {
 			     const SnapContext& snapc, const bufferlist &bl,
 			     ceph::real_time mtime, uint64_t trunc_size,
 			     __u32 trunc_seq, ceph_tid_t journal_tid,
-			     Context *oncommit);
+			     Context *oncommit,
+           const struct blkin_trace_info *trace_info = nullptr);
     using WritebackHandler::write;
 
     virtual void overwrite_extent(const object_t& oid, uint64_t off,
@@ -68,6 +70,7 @@ namespace librbd {
     librbd::ImageCtx *m_ictx;
     ceph::unordered_map<std::string, std::queue<write_result_d*> > m_writes;
     friend class C_OrderedWrite;
+    ZTracer::Endpoint m_endp;
   };
 }
 

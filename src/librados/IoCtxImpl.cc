@@ -759,8 +759,7 @@ int librados::IoCtxImpl::aio_operate_read(const object_t &oid,
 
 int librados::IoCtxImpl::aio_operate(const object_t& oid,
 				     ::ObjectOperation *o, AioCompletionImpl *c,
-				     const SnapContext& snap_context, int flags,
-             const blkin_trace_info *trace_info)
+				     const SnapContext& snap_context, int flags)
 {
   auto ut = ceph::real_clock::now(client->cct);
   /* can't write to a snapshot */
@@ -773,15 +772,9 @@ int librados::IoCtxImpl::aio_operate(const object_t& oid,
   c->io = this;
   queue_aio_write(c);
 
-  ZTracer::Trace trace;
-  if (trace_info) {
-    trace.init("rados aio operate", &objecter->trace_endpoint, trace_info);
-    trace.event("aio_operate");
-  }
-
   Objecter::Op *op = objecter->prepare_mutate_op(
     oid, oloc, *o, snap_context, ut, flags, onack,
-    oncommit, &c->objver, &trace);
+    oncommit, &c->objver);
   objecter->op_submit(op, &c->tid);
 
   return 0;

@@ -125,11 +125,12 @@ class ObjectCacher {
     SnapContext snapc;
     ceph_tid_t journal_tid;
     int error; // holds return value for failed reads
+    const blkin_trace_info *m_trace_info;
 
     map<loff_t, list<Context*> > waitfor_read;
 
     // cons
-    explicit BufferHead(Object *o) :
+    explicit BufferHead(Object *o, const blkin_trace_info *trace_info = nullptr) :
       state(STATE_MISSING),
       ref(0),
       dontneed(false),
@@ -138,7 +139,8 @@ class ObjectCacher {
       last_write_tid(0),
       last_read_tid(0),
       journal_tid(0),
-      error(0) {
+      error(0),
+      m_trace_info(trace_info) {
       ex.start = ex.length = 0;
     }
 
@@ -346,7 +348,8 @@ class ObjectCacher {
                  map<loff_t, BufferHead*>& missing,
                  map<loff_t, BufferHead*>& rx,
 		 map<loff_t, BufferHead*>& errors);
-    BufferHead *map_write(ObjectExtent &ex, ceph_tid_t tid);
+    BufferHead *map_write(ObjectExtent &ex, ceph_tid_t tid,
+      const blkin_trace_info *trace_info = nullptr);
     
     void replace_journal_tid(BufferHead *bh, ceph_tid_t tid);
     void truncate(loff_t s);

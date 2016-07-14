@@ -39,7 +39,10 @@ namespace librbd {
       m_hide_enoent(hide_enoent), m_trace_info(trace_info) {
     Striper::extent_to_file(m_ictx->cct, &m_ictx->layout, m_object_no,
                             0, m_ictx->layout.object_size, m_parent_extents);
-
+    ZTracer::Endpoint endpoint = ZTracer::Endpoint("AioObjectRequest");
+    ZTracer::Trace trace = ZTracer::Trace();
+    trace.init("ObjectCacher", &endpoint, m_trace_info, false);
+    trace.event("AioObjectRequest created");
     RWLock::RLocker snap_locker(m_ictx->snap_lock);
     RWLock::RLocker parent_locker(m_ictx->parent_lock);
     compute_parent_extents();

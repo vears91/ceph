@@ -189,7 +189,7 @@ namespace librbd {
   };
 
   LibrbdWriteback::LibrbdWriteback(ImageCtx *ictx, Mutex& lock)
-    : m_tid(0), m_lock(lock), m_ictx(ictx) {
+    : m_tid(0), m_lock(lock), m_ictx(ictx), m_endp("LibRbdWriteback") {
   }
 
   void LibrbdWriteback::read(const object_t& oid, uint64_t object_no,
@@ -255,7 +255,8 @@ namespace librbd {
 				    const bufferlist &bl,
 				    ceph::real_time mtime, uint64_t trunc_size,
 				    __u32 trunc_seq, ceph_tid_t journal_tid,
-				    Context *oncommit)
+				    Context *oncommit,
+            const struct blkin_trace_info *trace_info)
   {
     assert(m_ictx->owner_lock.is_locked());
     uint64_t object_no = oid_to_object_no(oid.name, m_ictx->object_prefix);
@@ -274,7 +275,7 @@ namespace librbd {
 					      journal_tid));
     } else {
       AioObjectWrite *req = new AioObjectWrite(m_ictx, oid.name, object_no,
-					       off, bl, snapc, req_comp);
+					       off, bl, snapc, req_comp, trace_info);
       req->send();
     }
     return ++m_tid;
