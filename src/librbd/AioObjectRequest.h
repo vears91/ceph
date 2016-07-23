@@ -66,7 +66,8 @@ namespace librbd {
 	          uint64_t objectno, uint64_t offset, uint64_t len,
 	          vector<pair<uint64_t,uint64_t> >& be,
 	          librados::snap_t snap_id, bool sparse,
-	          Context *completion, int op_flags);
+	          Context *completion, int op_flags,
+            const blkin_trace_info *trace_info = nullptr);
 
     virtual bool should_complete(int r);
     virtual void send();

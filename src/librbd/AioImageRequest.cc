@@ -81,10 +81,11 @@ template <typename I>
 void AioImageRequest<I>::aio_read(
     I *ictx, AioCompletion *c,
     const std::vector<std::pair<uint64_t,uint64_t> > &extents,
-    char *buf, bufferlist *pbl, int op_flags) {
+    char *buf, bufferlist *pbl, int op_flags,
+    const blkin_trace_info *trace_info) {
   c->init_time(ictx, librbd::AIO_TYPE_READ);
 
-  AioImageRead req(*ictx, c, extents, buf, pbl, op_flags);
+  AioImageRead req(*ictx, c, extents, buf, pbl, op_flags, trace_info);
   req.start_op();
   req.send();
 }
@@ -92,10 +93,11 @@ void AioImageRequest<I>::aio_read(
 template <typename I>
 void AioImageRequest<I>::aio_read(I *ictx, AioCompletion *c,
                                   uint64_t off, size_t len, char *buf,
-                                  bufferlist *pbl, int op_flags) {
+                                  bufferlist *pbl, int op_flags,
+                                  const blkin_trace_info *trace_info) {
   c->init_time(ictx, librbd::AIO_TYPE_READ);
 
-  AioImageRead req(*ictx, c, off, len, buf, pbl, op_flags);
+  AioImageRead req(*ictx, c, off, len, buf, pbl, op_flags, trace_info);
   req.start_op();
   req.send();
 }
@@ -153,7 +155,7 @@ void AioImageRead::send_request() {
 
   if (m_image_ctx.object_cacher && m_image_ctx.readahead_max_bytes > 0 &&
       !(m_op_flags & LIBRADOS_OP_FLAG_FADVISE_RANDOM)) {
-    readahead(&m_image_ctx, m_image_extents);
+    readahead(&m_image_ctx, m_image_extents, m_trace_info);
   }
 
   librados::snap_t snap_id;
@@ -209,14 +211,14 @@ void AioImageRead::send_request() {
                                              extent.objectno, extent.offset,
                                              extent.length,
                                              extent.buffer_extents, snap_id,
-                                             true, req_comp, m_op_flags);
+                                             true, req_comp, m_op_flags, m_trace_info);
       req_comp->set_req(req);
 
       if (m_image_ctx.object_cacher) {
         C_CacheRead *cache_comp = new C_CacheRead(&m_image_ctx, req);
         m_image_ctx.aio_read_from_cache(extent.oid, extent.objectno,
                                         &req->data(), extent.length,
-                                        extent.offset, cache_comp, m_op_flags);
+                                        extent.offset, cache_comp, m_op_flags, m_trace_info);
       } else {
         req->send();
       }

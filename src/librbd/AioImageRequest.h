@@ -28,9 +28,11 @@ public:
 
   static void aio_read(ImageCtxT *ictx, AioCompletion *c,
                        const std::vector<std::pair<uint64_t,uint64_t> > &extents,
-                       char *buf, bufferlist *pbl, int op_flags);
+                       char *buf, bufferlist *pbl, int op_flags,
+                       const blkin_trace_info *trace_info = nullptr);
   static void aio_read(ImageCtxT *ictx, AioCompletion *c, uint64_t off,
-                       size_t len, char *buf, bufferlist *pbl, int op_flags);
+                       size_t len, char *buf, bufferlist *pbl, int op_flags,
+                       const blkin_trace_info *trace_info = nullptr);
   static void aio_write(ImageCtxT *ictx, AioCompletion *c, uint64_t off,
                         size_t len, const char *buf, int op_flags,
                         const blkin_trace_info *trace_info = nullptr);
@@ -67,16 +69,17 @@ protected:
 class AioImageRead : public AioImageRequest<> {
 public:
   AioImageRead(ImageCtx &image_ctx, AioCompletion *aio_comp, uint64_t off,
-               size_t len, char *buf, bufferlist *pbl, int op_flags)
-    : AioImageRequest(image_ctx, aio_comp), m_buf(buf), m_pbl(pbl),
+               size_t len, char *buf, bufferlist *pbl, int op_flags,
+               const blkin_trace_info *trace_info = nullptr)
+    : AioImageRequest(image_ctx, aio_comp, trace_info), m_buf(buf), m_pbl(pbl),
       m_op_flags(op_flags) {
     m_image_extents.push_back(std::make_pair(off, len));
   }
 
   AioImageRead(ImageCtx &image_ctx, AioCompletion *aio_comp,
                const Extents &image_extents, char *buf, bufferlist *pbl,
-               int op_flags)
-    : AioImageRequest(image_ctx, aio_comp), m_image_extents(image_extents),
+               int op_flags, const blkin_trace_info *trace_info = nullptr)
+    : AioImageRequest(image_ctx, aio_comp, trace_info), m_image_extents(image_extents),
       m_buf(buf), m_pbl(pbl), m_op_flags(op_flags) {
   }
 
