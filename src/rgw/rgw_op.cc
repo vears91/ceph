@@ -2689,9 +2689,10 @@ void RGWPutObj::execute()
     if (need_to_wait) {
       orig_data = data;
     }
-
+    //if (s->trace && s->trace.valid())
+      //s->trace.event("put put puta");
     op_ret = put_data_and_throttle(processor, data, ofs,
-				  (need_calc_md5 ? &hash : NULL), need_to_wait);
+				  (need_calc_md5 ? &hash : NULL), need_to_wait, &s->trace);
     if (op_ret < 0) {
       if (!need_to_wait || op_ret != -EEXIST) {
         ldout(s->cct, 20) << "processor->thottle_data() returned ret="
@@ -2721,7 +2722,7 @@ void RGWPutObj::execute()
         goto done;
       }
 
-      op_ret = put_data_and_throttle(processor, data, ofs, NULL, false);
+      op_ret = put_data_and_throttle(processor, data, ofs, NULL, false, &s->trace);
       if (op_ret < 0) {
         goto done;
       }

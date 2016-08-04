@@ -2215,7 +2215,7 @@ RGWPutObjProcessor_Aio::~RGWPutObjProcessor_Aio()
   }
 }
 
-int RGWPutObjProcessor_Aio::handle_obj_data(rgw_obj& obj, bufferlist& bl, off_t ofs, off_t abs_ofs, void **phandle, bool exclusive)
+int RGWPutObjProcessor_Aio::handle_obj_data(rgw_obj& obj, bufferlist& bl, off_t ofs, off_t abs_ofs, void **phandle, bool exclusive, ZTracer::Trace *trace)
 {
   if ((uint64_t)abs_ofs + bl.length() > obj_len)
     obj_len = abs_ofs + bl.length();
@@ -2229,7 +2229,7 @@ int RGWPutObjProcessor_Aio::handle_obj_data(rgw_obj& obj, bufferlist& bl, off_t 
   int r = store->aio_put_obj_data(NULL, obj,
                                      bl,
                                      ((ofs != 0) ? ofs : -1),
-                                     exclusive, phandle);
+                                     exclusive, phandle, trace);
   return r;
 }
 
@@ -2311,7 +2311,7 @@ int RGWPutObjProcessor_Aio::throttle_data(void *handle, const rgw_obj& obj, bool
   return 0;
 }
 
-int RGWPutObjProcessor_Atomic::write_data(bufferlist& bl, off_t ofs, void **phandle, rgw_obj *pobj, bool exclusive)
+int RGWPutObjProcessor_Atomic::write_data(bufferlist& bl, off_t ofs, void **phandle, rgw_obj *pobj, bool exclusive, ZTracer::Trace *trace)
 {
   if (ofs >= next_part_ofs) {
     int r = prepare_next_part(ofs);
@@ -2322,10 +2322,10 @@ int RGWPutObjProcessor_Atomic::write_data(bufferlist& bl, off_t ofs, void **phan
 
   *pobj = cur_obj;
 
-  return RGWPutObjProcessor_Aio::handle_obj_data(cur_obj, bl, ofs - cur_part_ofs, ofs, phandle, exclusive);
+  return RGWPutObjProcessor_Aio::handle_obj_data(cur_obj, bl, ofs - cur_part_ofs, ofs, phandle, exclusive, trace);
 }
 
-int RGWPutObjProcessor_Atomic::handle_data(bufferlist& bl, off_t ofs, MD5 *hash, void **phandle, rgw_obj *pobj, bool *again)
+int RGWPutObjProcessor_Atomic::handle_data(bufferlist& bl, off_t ofs, MD5 *hash, void **phandle, rgw_obj *pobj, bool *again, ZTracer::Trace *trace)
 {
   *again = false;
 
@@ -2374,7 +2374,7 @@ int RGWPutObjProcessor_Atomic::handle_data(bufferlist& bl, off_t ofs, MD5 *hash,
   bool exclusive = (!write_ofs && immutable_head()); /* immutable head object, need to verify nothing exists there
                                                         we could be racing with another upload, to the same
                                                         object and cleanup can be messy */
-  int ret = write_data(bl, write_ofs, phandle, pobj, exclusive);
+  int ret = write_data(bl, write_ofs, phandle, pobj, exclusive, trace);
   if (ret >= 0) { /* we might return, need to clear bl as it was already sent */
     if (hash) {
       hash->Update((const byte *)bl.c_str(), bl.length());
@@ -6317,7 +6317,7 @@ int RGWRados::put_obj_data(void *ctx, rgw_obj& obj,
 
 int RGWRados::aio_put_obj_data(void *ctx, rgw_obj& obj, bufferlist& bl,
 			       off_t ofs, bool exclusive,
-                               void **handle)
+                               void **handle, ZTracer::Trace *trace)
 {
   rgw_rados_ref ref;
   rgw_bucket bucket;
@@ -6339,7 +6339,7 @@ int RGWRados::aio_put_obj_data(void *ctx, rgw_obj& obj, bufferlist& bl,
   } else {
     op.write(ofs, bl);
   }
-  r = ref.ioctx.aio_operate(ref.oid, c, &op);
+  r = ref.ioctx.aio_operate(ref.oid, c, &op, (trace) ? trace->get_info() : nullptr );
   if (r < 0)
     return r;
 

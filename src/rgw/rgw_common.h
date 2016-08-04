@@ -39,6 +39,7 @@
 #include "cls/user/cls_user_types.h"
 #include "cls/rgw/cls_rgw_types.h"
 #include "include/rados/librados.hpp"
+#include "common/zipkin_trace.h"
 
 using namespace std;
 
@@ -1322,6 +1323,8 @@ struct req_state {
   string dialect;
   string req_id;
   string trans_id;
+  ZTracer::Endpoint endp;
+  ZTracer::Trace trace;
 
   req_state(CephContext* _cct, RGWEnv* e, RGWUserInfo* u);
   ~req_state();

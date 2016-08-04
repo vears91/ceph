@@ -1376,7 +1376,7 @@ extern int rgw_build_object_policies(RGWRados *store, struct req_state *s,
 
 static inline int put_data_and_throttle(RGWPutObjProcessor *processor,
 					bufferlist& data, off_t ofs,
-					MD5 *hash, bool need_to_wait)
+					MD5 *hash, bool need_to_wait, ZTracer::Trace *trace = nullptr)
 {
   bool again;
 
@@ -1384,7 +1384,7 @@ static inline int put_data_and_throttle(RGWPutObjProcessor *processor,
     void *handle;
     rgw_obj obj;
 
-    int ret = processor->handle_data(data, ofs, hash, &handle, &obj, &again);
+    int ret = processor->handle_data(data, ofs, hash, &handle, &obj, &again, trace);
     if (ret < 0)
       return ret;
 
