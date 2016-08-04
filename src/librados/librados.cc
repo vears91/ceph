@@ -1456,11 +1456,11 @@ int librados::IoCtx::operate(const std::string& oid, librados::ObjectReadOperati
 }
 
 int librados::IoCtx::aio_operate(const std::string& oid, AioCompletion *c,
-				 librados::ObjectWriteOperation *o)
+				 librados::ObjectWriteOperation *o, const blkin_trace_info *trace_info)
 {
   object_t obj(oid);
   return io_ctx_impl->aio_operate(obj, &o->impl->o, c->pc,
-				  io_ctx_impl->snapc, 0);
+				  io_ctx_impl->snapc, 0, trace_info);
 }
 int librados::IoCtx::aio_operate(const std::string& oid, AioCompletion *c,
 				 ObjectWriteOperation *o, int flags)

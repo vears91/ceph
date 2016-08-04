@@ -985,7 +985,7 @@ namespace librados
     // compound object operations
     int operate(const std::string& oid, ObjectWriteOperation *op);
     int operate(const std::string& oid, ObjectReadOperation *op, bufferlist *pbl);
-    int aio_operate(const std::string& oid, AioCompletion *c, ObjectWriteOperation *op);
+    int aio_operate(const std::string& oid, AioCompletion *c, ObjectWriteOperation *op, const blkin_trace_info *trace_info = nullptr);
     int aio_operate(const std::string& oid, AioCompletion *c, ObjectWriteOperation *op, int flags);
     /**
      * Schedule an async write operation with explicit snapshot parameters

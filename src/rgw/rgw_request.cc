@@ -25,6 +25,8 @@ void RGWRequest::log_init() {
 }
 
 void RGWRequest::log(struct req_state *s, const char *msg) {
+  //if (s->trace && s->trace.valid())
+  //  s->trace.event(msg);
   if (s->info.method && req_str.size() == 0) {
     req_str = s->info.method;
     req_str.append(" ");

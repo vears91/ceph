@@ -173,7 +173,7 @@ void req_info::rebuild_from(req_info& src)
 
 req_state::req_state(CephContext* _cct, RGWEnv* e, RGWUserInfo* u)
   : cct(_cct), cio(NULL), op(OP_UNKNOWN), user(u), has_acl_header(false),
-    info(_cct, e)
+    info(_cct, e), endp("rgw"), trace("rgw", &endp)
 {
   enable_ops_log = e->conf->enable_ops_log;
   enable_usage_log = e->conf->enable_usage_log;
